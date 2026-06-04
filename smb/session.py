@@ -1,9 +1,53 @@
+import functools
 import sys
 
 import smbclient
 
 from config import SMB_HOST, SMB_PORT, SMB_USERNAME, SMB_PASSWORD, SMB_SHARE, SMB_ENCRYPT, SMB_TIMEOUT
 from utils.logger import log
+
+_RETRYABLE = frozenset({
+    "SMBConnectionClosed",
+    "BrokenPipeError",
+    "ConnectionResetError",
+    "ConnectionAbortedError",
+})
+
+
+def is_connection_error(exc: Exception) -> bool:
+    return type(exc).__name__ in _RETRYABLE
+
+
+def reconnect() -> None:
+    log.warning("SMB connection lost — reconnecting to \\\\%s", SMB_HOST)
+    try:
+        smbclient.reset_connection_cache()
+    except Exception:
+        pass
+    smbclient.register_session(
+        SMB_HOST,
+        username=SMB_USERNAME,
+        password=SMB_PASSWORD,
+        port=SMB_PORT,
+        require_signing=True,
+        encrypt=SMB_ENCRYPT,
+        connection_timeout=SMB_TIMEOUT,
+    )
+    log.info("SMB reconnected to \\\\%s", SMB_HOST)
+
+
+def with_reconnect(fn):
+    """Retry fn once after re-registering the SMB session on connection drop."""
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except Exception as exc:
+            if not is_connection_error(exc):
+                raise
+            reconnect()
+            return fn(*args, **kwargs)
+    return wrapper
 
 
 def setup() -> None:

@@ -5,12 +5,14 @@ import posixpath
 import smbclient
 
 from smb.helpers import smb_path
+from smb.session import is_connection_error, with_reconnect
 from utils.logger import audit
 from utils.validators import check_filename_denylist, safe_relative_path, sanitised_error
 
 
 def register(mcp) -> None:
     @mcp.tool()
+    @with_reconnect
     def get_file_info(path: str) -> str:
         """
         Return metadata for a file or directory on the SMB share without reading its contents.
@@ -55,5 +57,7 @@ def register(mcp) -> None:
             audit("get_file_info", relative, "denied", reason=str(exc))
             return json.dumps({"error": str(exc)})
         except Exception as exc:
+            if is_connection_error(exc):
+                raise
             audit("get_file_info", relative, "error")
             return sanitised_error(exc)

@@ -3,12 +3,14 @@ import json
 import smbclient
 
 from smb.helpers import SEARCH_MAX_RESULTS, collect_matches, smb_path
+from smb.session import is_connection_error, with_reconnect
 from utils.logger import audit
 from utils.validators import safe_relative_path, sanitised_error
 
 
 def register(mcp) -> None:
     @mcp.tool()
+    @with_reconnect
     def search_files(pattern: str, path: str = "", max_depth: int = 5) -> str:
         """
         Search for files whose names match a glob pattern within a directory subtree.
@@ -72,5 +74,7 @@ def register(mcp) -> None:
             audit("search_files", relative, "denied", reason=str(exc), pattern=pattern)
             return json.dumps({"error": str(exc)})
         except Exception as exc:
+            if is_connection_error(exc):
+                raise
             audit("search_files", relative, "error", pattern=pattern)
             return sanitised_error(exc)

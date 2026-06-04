@@ -3,12 +3,14 @@ import json
 import smbclient
 
 from smb.helpers import smb_path
+from smb.session import is_connection_error, with_reconnect
 from utils.logger import audit
 from utils.validators import check_filename_denylist, safe_relative_path, sanitised_error
 
 
 def register(mcp) -> None:
     @mcp.tool()
+    @with_reconnect
     def list_files(path: str = "") -> str:
         """
         List files and directories at the given path on the SMB share.
@@ -53,5 +55,7 @@ def register(mcp) -> None:
             audit("list_files", relative, "denied", reason=str(exc))
             return json.dumps({"error": str(exc)})
         except Exception as exc:
+            if is_connection_error(exc):
+                raise
             audit("list_files", relative, "error")
             return sanitised_error(exc)

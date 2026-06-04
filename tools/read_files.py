@@ -5,6 +5,7 @@ import smbclient
 
 from config import MAX_FILE_SIZE_BYTES, READ_PREVIEW_LINES
 from smb.helpers import smb_path
+from smb.session import is_connection_error, with_reconnect
 from utils.document_parsers import extract_document_text
 from utils.logger import audit
 from utils.validators import check_filename_denylist, safe_relative_path, sanitised_error
@@ -12,6 +13,7 @@ from utils.validators import check_filename_denylist, safe_relative_path, saniti
 
 def register(mcp) -> None:
     @mcp.tool()
+    @with_reconnect
     def read_file(path: str) -> str:
         """
         Read the contents of a file from the SMB share.
@@ -113,5 +115,7 @@ def register(mcp) -> None:
             audit("read_file", relative, "denied", reason=str(exc))
             return json.dumps({"error": str(exc)})
         except Exception as exc:
+            if is_connection_error(exc):
+                raise
             audit("read_file", relative, "error")
             return sanitised_error(exc)
