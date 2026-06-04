@@ -2,6 +2,7 @@ import os
 import sys
 
 from utils.logger import log
+from utils.validators import validate_allowed_paths
 
 _REQUIRED_ENV = ["SMB_HOST", "SMB_SHARE", "SMB_USERNAME", "SMB_PASSWORD"]
 
@@ -36,6 +37,12 @@ def validate() -> None:
     missing = [v for v in _REQUIRED_ENV if not os.environ.get(v)]
     if missing:
         log.error("Missing required environment variables: %s", ", ".join(missing))
+        sys.exit(1)
+
+    try:
+        validate_allowed_paths()
+    except ValueError as exc:
+        log.error("Invalid ALLOWED_PATHS: %s", exc)
         sys.exit(1)
 
     global SMB_PORT, SMB_TIMEOUT, MAX_FILE_SIZE_BYTES, READ_PREVIEW_LINES

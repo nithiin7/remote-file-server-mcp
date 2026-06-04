@@ -3,6 +3,7 @@ import json
 import posixpath
 
 import smbclient
+from mcp.server.fastmcp import FastMCP
 
 from smb.helpers import smb_path
 from smb.session import is_connection_error, with_reconnect
@@ -10,7 +11,7 @@ from utils.logger import audit
 from utils.validators import check_filename_denylist, safe_relative_path, sanitised_error
 
 
-def register(mcp) -> None:
+def register(mcp: FastMCP) -> None:
     @mcp.tool()
     @with_reconnect
     def get_file_info(path: str) -> str:

@@ -28,12 +28,15 @@ Repository = "https://github.com/nithiin7/remote-file-server-mcp"
 file-server-mcp = "server:main"
 
 [project.optional-dependencies]
-docs = ["pymupdf>=1.24.0", "openpyxl>=3.1.0", "xlrd>=2.0.1", "python-docx>=1.1.0", "python-pptx>=0.6.23"]
+parsers = ["pymupdf>=1.24.0", "openpyxl>=3.1.0", "xlrd>=2.0.1", "python-docx>=1.1.0", "python-pptx>=0.6.23"]
 dev = ["pytest>=8.0"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
 
 [tool.hatch.build.targets.wheel]
 sources = ["."]

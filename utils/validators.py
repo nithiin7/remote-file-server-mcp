@@ -45,12 +45,15 @@ ALLOWED_PATHS: list[str] = (
     else []
 )
 
-for _p in ALLOWED_PATHS:
-    if ".." in _p.split("/"):
-        raise ValueError(
-            f"ALLOWED_PATHS contains an unsafe entry: {_p!r}. "
-            "Paths must not contain '..' components."
-        )
+
+def validate_allowed_paths() -> None:
+    """Raise ValueError if any ALLOWED_PATHS entry contains a '..' component."""
+    for _p in ALLOWED_PATHS:
+        if ".." in _p.split("/"):
+            raise ValueError(
+                f"ALLOWED_PATHS contains an unsafe entry: {_p!r}. "
+                "Paths must not contain '..' components."
+            )
 
 
 def safe_relative_path(path: str) -> str:

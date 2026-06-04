@@ -1,11 +1,15 @@
 import functools
 import sys
 import time
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 import smbclient
 
 from config import SMB_HOST, SMB_PORT, SMB_USERNAME, SMB_PASSWORD, SMB_SHARE, SMB_ENCRYPT, SMB_TIMEOUT
 from utils.logger import log
+
+_F = TypeVar("_F", bound=Callable[..., Any])
 
 _RETRYABLE = frozenset({
     "SMBConnectionClosed",
@@ -37,7 +41,7 @@ def reconnect() -> None:
     log.info("SMB reconnected to \\\\%s", SMB_HOST)
 
 
-def with_reconnect(fn):
+def with_reconnect(fn: _F) -> _F:
     """Retry fn once after re-registering the SMB session on connection drop."""
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):

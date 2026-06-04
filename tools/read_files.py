@@ -2,6 +2,7 @@ import json
 import posixpath
 
 import smbclient
+from mcp.server.fastmcp import FastMCP
 
 from config import MAX_FILE_SIZE_BYTES, READ_PREVIEW_LINES
 from smb.helpers import smb_path
@@ -11,7 +12,7 @@ from utils.logger import audit
 from utils.validators import check_filename_denylist, safe_relative_path, sanitised_error
 
 
-def register(mcp) -> None:
+def register(mcp: FastMCP) -> None:
     @mcp.tool()
     @with_reconnect
     def read_file(path: str) -> str:
