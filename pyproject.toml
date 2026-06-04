@@ -9,7 +9,16 @@ description = "MCP server for SMB/CIFS file share access — list, read, and sea
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
+authors = [{ name = "Nithin Pradeep", email = "nithinp150@gmail.com" }]
 keywords = ["mcp", "smb", "cifs", "file-server", "claude"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Repository = "https://github.com/nithiin7/remote-file-server-mcp"
 dependencies = [
     "mcp>=1.0.0",
     "smbprotocol>=1.15.0",
