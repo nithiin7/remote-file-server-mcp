@@ -44,7 +44,7 @@
     # MCP servers communicate over stdio — no ports to expose
     # Secrets must be injected via environment variables at runtime
     ENV SMB_PORT=445 \
-        SMB_ENCRYPT=false \
+        SMB_ENCRYPT=true \
         MAX_FILE_SIZE_MB=10 \
         READ_PREVIEW_LINES=100
     
