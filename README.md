@@ -1,46 +1,69 @@
+<p align="center">
+  <img src="assets/logo.svg" alt="file-server-mcp" width="520"/>
+</p>
+
 # remote-file-server-mcp
 
-An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that gives any MCP client read access to an SMB/CIFS file share. Connection credentials are passed as environment variables and never appear in tool calls or conversation history.
+> **Give any AI assistant read access to your SMB/CIFS file shares — securely, in minutes.**
+
+[![CI](https://github.com/nithiin7/remote-file-server-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/nithiin7/remote-file-server-mcp/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-3776ab.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-22c55e.svg)](LICENSE)
+[![MCP Compatible](https://img.shields.io/badge/MCP-compatible-7c3aed.svg)](https://modelcontextprotocol.io)
 
 ---
 
-## How It Works
+## What is this?
 
-```
-MCP Client  ──(MCP/stdio)──►  file-server-mcp  ──(SMB/CIFS)──►  File Server
+An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that bridges **Claude Desktop** (or any MCP client) to your **SMB/CIFS network share** — Windows file servers, NAS drives, Samba shares, anything SMB.
+
+Ask Claude to read reports, search through spreadsheets, or summarize documents that live on your network — without moving a single file, pasting credentials into a chat, or granting write access.
+
+```mermaid
+flowchart LR
+    A("🤖 Claude Desktop\nor any MCP client"):::client
+    B("🔌 file-server-mcp\n<i>this server</i>"):::server
+    C("🗄️ SMB File Server\nWindows · NAS · Samba"):::storage
+
+    A -- "MCP / stdio" --> B
+    B -- "SMB 445 · encrypted" --> C
+
+    classDef client  fill:#7c3aed,color:#fff,stroke:none
+    classDef server  fill:#2563eb,color:#fff,stroke:none
+    classDef storage fill:#0f766e,color:#fff,stroke:none
 ```
 
-The server runs as a subprocess managed by the MCP client. All file access is read-only. SMB packet signing is enforced by default; full encryption is available via an env var.
+---
+
+## Features at a glance
+
+| | |
+|---|---|
+| **Read-only by design** | The server exposes zero write operations — your files are safe |
+| **Credentials stay local** | Passed as env vars, never appear in tool calls or chat history |
+| **SMB encryption & signing** | Packet signing on by default; full end-to-end encryption available |
+| **Path traversal blocked** | `..` segments are rejected before any SMB call is made |
+| **Sensitive file denylist** | `.env`, `*.key`, `*.pem`, `id_rsa`, keystores, and more are never listed or read |
+| **Audit log** | Every tool call (operation · path · outcome · size) written as JSON — never file contents |
+| **Office & PDF parsing** | Excel, Word, PowerPoint, and PDF files are parsed into readable text automatically |
+| **Subdirectory allowlist** | Lock the server to only the directories the model actually needs |
 
 ---
 
 ## Tools
 
-| Tool            | Arguments                                            | Description                                                                                                                                                                            |
-| --------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_files`    | `path` (optional)                                    | List files and directories at a path. Empty path = share root. Denied filenames are omitted from results. Returns JSON.                                                                |
-| `read_file`     | `path`                                               | Return text contents of a file. Oversized files return a preview (first N lines) or hard-error if `READ_PREVIEW_LINES=0`. Binary Office/PDF files are parsed into text when supported. |
-| `get_file_info` | `path`                                               | Return metadata (size, type, timestamps) for a file or directory without reading its contents.                                                                                         |
-| `search_files`  | `pattern`, `path` (optional), `max_depth` (optional) | Find files by glob pattern (e.g. `*.csv`). Recurses to `max_depth` (default `5`, max `10`) and returns up to `200` matches.                                                            |
+| Tool | Arguments | Description |
+|---|---|---|
+| `list_files` | `path` (optional) | List files and directories. Empty path = share root. Returns JSON. |
+| `read_file` | `path` | Return text contents. Oversized files return a preview or hard-error. Office/PDF files are parsed. |
+| `get_file_info` | `path` | Return metadata (size, type, timestamps) without reading the file. |
+| `search_files` | `pattern`, `path` (optional), `max_depth` (optional) | Glob search (e.g. `*.csv`). Recurses up to `max_depth` (default `5`, max `10`), returns up to 200 matches. |
 
-All paths are relative to the share root (e.g. `reports/2024/q1.xlsx`).
-
----
-
-## Security
-
-- **SMB packet signing** is required on all connections (protects against tampering in transit).
-- **Encryption** can be enabled via `SMB_ENCRYPT=true` for end-to-end SMB encryption.
-- **Path traversal** is blocked — `..` segments are rejected before any SMB call is made.
-- **Sensitive files** (`.env`, `*.key`, `*.pem`, `*.bak`, `id_rsa`, `*.pfx`, `*.p12`, `*.token`, `.netrc`, `.htpasswd`, keystore files, etc.) are never listed or read. The denylist covers well-known patterns but is **not exhaustive** — `ALLOWED_PATHS` is the stronger control and should be used in production to restrict access to only the directories the model needs.
-- **File size limit** prevents reading files that would exceed the context window.
-- **Allowed paths** can restrict the server to specific subdirectories only (recommended for production).
-- **Audit logging** records every tool call (operation, path, outcome, size) in JSON — never file contents.
-- Error messages are sanitised — internal hostnames, UNC paths, and credentials are never exposed to the client.
+All paths are relative to the share root — e.g. `reports/2024/q1.xlsx`.
 
 ---
 
-## Setup
+## Quickstart
 
 ### Option A — pip install
 
@@ -48,33 +71,20 @@ All paths are relative to the share root (e.g. `reports/2024/q1.xlsx`).
 pip install -e /path/to/remote-file-server
 ```
 
-Then configure Claude Desktop (see below) with:
+Then use `"command": "file-server-mcp"` in your MCP client config.
 
-```json
-"command": "file-server-mcp"
-```
-
-### Option B — run from source (no package install)
+### Option B — uv (no install needed)
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate     # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-python server.py
-```
-
-### Option C — uv
-
-```bash
-# No install needed — uv resolves dependencies automatically
 uv run --directory /path/to/remote-file-server file-server-mcp
 ```
 
-Or install into a uv-managed environment:
+### Option C — run from source
 
 ```bash
-uv pip install -e /path/to/remote-file-server
-uv run file-server-mcp
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python server.py
 ```
 
 ### Option D — Docker
@@ -89,23 +99,16 @@ See `Dockerfile` for runtime usage.
 
 ## MCP Client Configuration
 
-Open your Client config file:
+Add an entry under `mcpServers` in your client config file.
 
-Add an entry under `mcpServers`.
-
-**If using `uv` (run from source, no prior install):**
+**uv (run from source, no prior install):**
 
 ```json
 {
   "mcpServers": {
     "file-server": {
       "command": "uv",
-      "args": [
-        "run",
-        "--directory",
-        "/path/to/remote-file-server",
-        "file-server-mcp"
-      ],
+      "args": ["run", "--directory", "/path/to/remote-file-server", "file-server-mcp"],
       "env": {
         "SMB_HOST": "192.168.1.100",
         "SMB_SHARE": "my_share",
@@ -117,7 +120,7 @@ Add an entry under `mcpServers`.
 }
 ```
 
-**If installed via pip/uv pip (console script entry point):**
+**pip/uv pip (console script entry point):**
 
 ```json
 {
@@ -138,32 +141,22 @@ Add an entry under `mcpServers`.
 }
 ```
 
-> **Security note:** The config file contains credentials. Ensure it is only readable by your user account (`chmod 600` on macOS/Linux).
+> **Security note:** This config file contains credentials — restrict its permissions (`chmod 600` on macOS/Linux).
 
-Restart Claude Desktop after saving.
+Restart your MCP client after saving.
 
-### Connecting to Multiple Servers
-
-Add a separate entry for each server with a unique key:
+### Connecting to multiple servers
 
 ```json
 {
   "mcpServers": {
     "file-server-prod": {
       "command": "file-server-mcp",
-      "env": {
-        "SMB_HOST": "10.0.0.10",
-        "SMB_SHARE": "Production",
-        "...": "..."
-      }
+      "env": { "SMB_HOST": "10.0.0.10", "SMB_SHARE": "Production", "...": "..." }
     },
     "file-server-dev": {
       "command": "file-server-mcp",
-      "env": {
-        "SMB_HOST": "10.0.0.20",
-        "SMB_SHARE": "Development",
-        "...": "..."
-      }
+      "env": { "SMB_HOST": "10.0.0.20", "SMB_SHARE": "Development", "...": "..." }
     }
   }
 }
@@ -173,19 +166,30 @@ Add a separate entry for each server with a unique key:
 
 ## Environment Variables
 
-| Variable             | Required | Default | Description                                                           |
-| -------------------- | -------- | ------- | --------------------------------------------------------------------- |
-| `SMB_HOST`           | Yes      | —       | IP address or hostname of the SMB server                              |
-| `SMB_SHARE`          | Yes      | —       | Share name on the server                                              |
-| `SMB_USERNAME`       | Yes      | —       | Username for SMB authentication                                       |
-| `SMB_PASSWORD`       | Yes      | —       | Password for SMB authentication                                       |
-| `SMB_PORT`           | No       | `445`   | SMB port                                                              |
-| `SMB_ENCRYPT`        | No       | `true`  | Set to `false` to disable SMB encryption (not recommended)            |
-| `SMB_TIMEOUT`        | No       | `30`    | Seconds before an SMB connect or operation times out                  |
-| `MAX_FILE_SIZE_MB`   | No       | `10`    | Maximum file size in MB that `read_file` will read                    |
-| `READ_PREVIEW_LINES` | No       | `100`   | Lines to return for oversized files. Set to `0` to hard-error instead |
-| `ALLOWED_PATHS`      | No       | —       | Comma-separated subdirectory allowlist, e.g. `reports,finance/2024`   |
-| `AUDIT_LOG_PATH`     | No       | stdout  | File path for JSON audit logs. Falls back to stdout if unset          |
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `SMB_HOST` | Yes | — | IP address or hostname of the SMB server |
+| `SMB_SHARE` | Yes | — | Share name on the server |
+| `SMB_USERNAME` | Yes | — | Username for SMB authentication |
+| `SMB_PASSWORD` | Yes | — | Password for SMB authentication |
+| `SMB_PORT` | No | `445` | SMB port |
+| `SMB_ENCRYPT` | No | `true` | Set to `false` to disable SMB encryption (not recommended) |
+| `SMB_TIMEOUT` | No | `30` | Seconds before an SMB connect or operation times out |
+| `MAX_FILE_SIZE_MB` | No | `10` | Maximum file size in MB that `read_file` will read |
+| `READ_PREVIEW_LINES` | No | `100` | Lines to return for oversized files. Set to `0` to hard-error instead |
+| `ALLOWED_PATHS` | No | — | Comma-separated subdirectory allowlist, e.g. `reports,finance/2024` |
+| `AUDIT_LOG_PATH` | No | stdout | File path for JSON audit logs. Falls back to stdout if unset |
+
+---
+
+## Security
+
+- **SMB packet signing** is required on all connections.
+- **Path traversal** is blocked — `..` segments are rejected before any SMB call.
+- **Sensitive file denylist** covers `.env`, `*.key`, `*.pem`, `*.bak`, `id_rsa`, `*.pfx`, `*.p12`, `*.token`, `.netrc`, `.htpasswd`, keystore files, and more. For production, combine this with `ALLOWED_PATHS` to restrict access to only the directories the model needs.
+- **File size limit** prevents reading files that would overflow the context window.
+- **Audit logging** records every tool call in JSON — never file contents.
+- **Error messages are sanitised** — internal hostnames, UNC paths, and credentials are never exposed to the client.
 
 ---
 
