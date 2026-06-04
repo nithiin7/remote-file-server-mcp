@@ -78,8 +78,28 @@ def register(mcp) -> None:
                               file_size_bytes=stat.st_size, encoding="utf-8")
                         return content
             except UnicodeDecodeError:
+                if oversized:
+                    audit("read_file", relative, "denied",
+                          reason="file_too_large", file_size_bytes=stat.st_size)
+                    return json.dumps({
+                        "error": (
+                            f"File is too large to read "
+                            f"({stat.st_size // (1024 * 1024)} MB). "
+                            f"Maximum allowed size is {MAX_FILE_SIZE_BYTES // (1024 * 1024)} MB."
+                        )
+                    })
                 with smbclient.open_file(smb_file, mode="rb") as f:
-                    data = f.read()
+                    data = f.read(MAX_FILE_SIZE_BYTES + 1)
+                if len(data) > MAX_FILE_SIZE_BYTES:
+                    audit("read_file", relative, "denied",
+                          reason="file_too_large", file_size_bytes=len(data))
+                    return json.dumps({
+                        "error": (
+                            f"File is too large to read "
+                            f"({len(data) // (1024 * 1024)} MB). "
+                            f"Maximum allowed size is {MAX_FILE_SIZE_BYTES // (1024 * 1024)} MB."
+                        )
+                    })
                 extracted = extract_document_text(filename, data)
                 if extracted is not None:
                     audit("read_file", relative, "success",
