@@ -14,6 +14,7 @@ SMB_PORT = int(os.environ.get("SMB_PORT", "445"))
 SMB_USERNAME = os.environ["SMB_USERNAME"]
 SMB_PASSWORD = os.environ["SMB_PASSWORD"]
 SMB_SHARE = os.environ["SMB_SHARE"]
-SMB_ENCRYPT = os.environ.get("SMB_ENCRYPT", "false").lower() == "true"
+SMB_ENCRYPT = os.environ.get("SMB_ENCRYPT", "true").lower() == "true"
+SMB_TIMEOUT = int(os.environ.get("SMB_TIMEOUT", "30"))
 MAX_FILE_SIZE_BYTES = int(os.environ.get("MAX_FILE_SIZE_MB", "10")) * 1024 * 1024
 READ_PREVIEW_LINES = int(os.environ.get("READ_PREVIEW_LINES", "100"))

@@ -2,7 +2,7 @@ import sys
 
 import smbclient
 
-from config import SMB_HOST, SMB_PORT, SMB_USERNAME, SMB_PASSWORD, SMB_SHARE, SMB_ENCRYPT
+from config import SMB_HOST, SMB_PORT, SMB_USERNAME, SMB_PASSWORD, SMB_SHARE, SMB_ENCRYPT, SMB_TIMEOUT
 from utils.logger import log
 
 
@@ -14,6 +14,7 @@ def setup() -> None:
         port=SMB_PORT,
         require_signing=True,
         encrypt=SMB_ENCRYPT,
+        connection_timeout=SMB_TIMEOUT,
     )
     _check_connection()
 

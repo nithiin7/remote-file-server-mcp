@@ -45,6 +45,7 @@
     # Secrets must be injected via environment variables at runtime
     ENV SMB_PORT=445 \
         SMB_ENCRYPT=true \
+        SMB_TIMEOUT=30 \
         MAX_FILE_SIZE_MB=10 \
         READ_PREVIEW_LINES=100
     
