@@ -21,7 +21,9 @@ def register(mcp) -> None:
                   Parent directory traversal (..) is not permitted.
 
         Returns:
-            JSON array of objects with keys: name, type ("file"|"directory"), size (bytes, null for dirs).
+            JSON object with key "entries": array of objects with keys: name, type ("file"|"directory"),
+            size (bytes, null for dirs). Includes "truncated": true and a "note" when results are capped
+            at 200 entries.
         """
         try:
             relative = safe_relative_path(path)
@@ -31,6 +33,7 @@ def register(mcp) -> None:
 
         smb_dir = smb_path(relative)
         try:
+            LIMIT = 200
             entries: list[dict[str, object]] = []
             for entry in sorted(
                 smbclient.scandir(smb_dir),
@@ -49,8 +52,15 @@ def register(mcp) -> None:
                         "size": None if entry.is_dir() else entry.stat().st_size,
                     }
                 )
-            audit("list_files", relative, "success", entry_count=len(entries))
-            return json.dumps(entries, indent=2)
+                if len(entries) == LIMIT:
+                    break
+
+            result: dict[str, object] = {"entries": entries}
+            if len(entries) == LIMIT:
+                result["truncated"] = True
+                result["note"] = f"Results limited to {LIMIT} entries. Refine the path to see more."
+            audit("list_files", relative, "success", entry_count=len(entries), truncated=len(entries) == LIMIT)
+            return json.dumps(result, indent=2)
         except ValueError as exc:
             audit("list_files", relative, "denied", reason=str(exc))
             return json.dumps({"error": str(exc)})
