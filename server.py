@@ -7,7 +7,7 @@ Configure via environment variables:
   SMB_USERNAME      - Username (required)
   SMB_PASSWORD      - Password (required)
   SMB_PORT          - Port (default: 445)
-  SMB_ENCRYPT       - Enable SMB encryption: "true"/"false" (default: false)
+  SMB_ENCRYPT       - Enable SMB encryption: "true"/"false" (default: true)
   MAX_FILE_SIZE_MB  - Maximum file size to read in MB (default: 10)
   ALLOWED_PATHS     - Comma-separated list of allowed subdirectory paths
                       within the share (default: unrestricted).
@@ -15,8 +15,8 @@ Configure via environment variables:
   AUDIT_LOG_PATH      - File path for structured JSON audit logs.
                         If unset, audit logs are written to stdout.
   READ_PREVIEW_LINES  - Number of lines to return when a file exceeds
-                        MAX_FILE_SIZE_MB (default: 100). Set to 0 to
-                        hard-error instead of truncating.
+                        MAX_FILE_SIZE_MB (default: 100, maximum: 10000).
+                        Set to 0 to hard-error instead of truncating.
 """
 
 from importlib.metadata import PackageNotFoundError, version as _pkg_version

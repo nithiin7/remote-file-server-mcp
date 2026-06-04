@@ -71,7 +71,7 @@ def _check_connection() -> None:
     """
     share_root = f"\\\\{SMB_HOST}\\{SMB_SHARE}"
     try:
-        smbclient.scandir(share_root)
+        smbclient.stat(share_root)
         log.info("SMB session ready — connected to \\\\%s\\%s", SMB_HOST, SMB_SHARE)
     except Exception as exc:
         exc_type = type(exc).__name__

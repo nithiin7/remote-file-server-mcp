@@ -31,15 +31,25 @@ def extract_document_text(filename: str, data: bytes) -> str | None:
 # PDF
 # ---------------------------------------------------------------------------
 
+_MAX_PDF_PAGES = 500
+_MAX_SHEET_ROWS = 10_000
+
+
 def _parse_pdf(data: bytes) -> str:
     import pymupdf  # type: ignore
 
     parts: list[str] = []
     with pymupdf.open(stream=data, filetype="pdf") as doc:
-        for i, page in enumerate(doc, start=1):
-            text = page.get_text().strip()
+        page_count = doc.page_count
+        limit = min(page_count, _MAX_PDF_PAGES)
+        for i in range(limit):
+            text = doc[i].get_text().strip()
             if text:
-                parts.append(f"=== Page {i} ===\n{text}")
+                parts.append(f"=== Page {i + 1} ===\n{text}")
+        if page_count > _MAX_PDF_PAGES:
+            parts.append(
+                f"[Truncated — extracted {_MAX_PDF_PAGES} of {page_count} pages]"
+            )
     return "\n\n".join(parts) if parts else "[PDF contains no extractable text]"
 
 
@@ -55,11 +65,18 @@ def _parse_xlsx(data: bytes) -> str:
     for sheet_name in wb.sheetnames:
         ws = wb[sheet_name]
         rows: list[str] = []
+        truncated = False
         for row in ws.iter_rows(values_only=True):
+            if len(rows) >= _MAX_SHEET_ROWS:
+                truncated = True
+                break
             if any(cell is not None for cell in row):
                 rows.append("\t".join("" if cell is None else str(cell) for cell in row))
         if rows:
-            parts.append(f"=== Sheet: {sheet_name} ===\n" + "\n".join(rows))
+            section = f"=== Sheet: {sheet_name} ===\n" + "\n".join(rows)
+            if truncated:
+                section += f"\n[Truncated — showing first {_MAX_SHEET_ROWS} rows]"
+            parts.append(section)
     wb.close()
     return "\n\n".join(parts) if parts else "[Workbook contains no data]"
 
@@ -72,12 +89,16 @@ def _parse_xls(data: bytes) -> str:
     for sheet_name in wb.sheet_names():
         ws = wb.sheet_by_name(sheet_name)
         rows: list[str] = []
-        for row_idx in range(ws.nrows):
+        row_limit = min(ws.nrows, _MAX_SHEET_ROWS)
+        for row_idx in range(row_limit):
             cells = [str(ws.cell_value(row_idx, col)) for col in range(ws.ncols)]
             if any(c.strip() for c in cells):
                 rows.append("\t".join(cells))
         if rows:
-            parts.append(f"=== Sheet: {sheet_name} ===\n" + "\n".join(rows))
+            section = f"=== Sheet: {sheet_name} ===\n" + "\n".join(rows)
+            if ws.nrows > _MAX_SHEET_ROWS:
+                section += f"\n[Truncated — showing first {_MAX_SHEET_ROWS} rows]"
+            parts.append(section)
     return "\n\n".join(parts) if parts else "[Workbook contains no data]"
 
 
