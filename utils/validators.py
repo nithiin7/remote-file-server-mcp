@@ -66,6 +66,10 @@ def safe_relative_path(path: str) -> str:
     Returns the clean relative path (no leading slash, forward slashes).
     Raises ValueError with a generic message on any violation.
     """
+    # Reject null bytes — they can be used to truncate paths in some runtimes
+    if "\x00" in path:
+        raise ValueError("Access denied: path resolves outside the share root.")
+
     # Normalise separators, strip leading slashes
     normalised = path.replace("\\", "/").lstrip("/")
 

@@ -23,6 +23,13 @@ dependencies = [
 [project.scripts]
 file-server-mcp = "server:main"
 
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
 [tool.hatch.build.targets.wheel]
 sources = ["."]
 include = ["server.py", "config.py", "smb/**", "tools/**", "utils/**"]
