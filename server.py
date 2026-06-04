@@ -26,9 +26,12 @@ try:
 except PackageNotFoundError:
     __version__ = "unknown"
 
+import config
 import tools
 from mcp.server.fastmcp import FastMCP
 from smb.session import setup
+
+config.validate()
 
 mcp = FastMCP("file-server")
 
