@@ -41,11 +41,11 @@ flowchart LR
 |---|---|
 | **Read-only by design** | The server exposes zero write operations — your files are safe |
 | **Credentials stay local** | Passed as env vars, never appear in tool calls or chat history |
-| **SMB encryption & signing** | Packet signing on by default; full end-to-end encryption available |
+| **SMB encryption & signing** | Packet signing and encryption are both on by default; set `SMB_ENCRYPT=false` to disable encryption only |
 | **Path traversal blocked** | `..` segments are rejected before any SMB call is made |
 | **Sensitive file denylist** | `.env`, `*.key`, `*.pem`, `id_rsa`, keystores, and more are never listed or read |
-| **Audit log** | Every tool call (operation · path · outcome · size) written as JSON — never file contents |
-| **Office & PDF parsing** | Excel, Word, PowerPoint, and PDF files are parsed into readable text automatically |
+| **Audit log** | Every tool call written as a JSON entry (operation, path, outcome, and tool-specific metadata) — never file contents |
+| **Office & PDF parsing** | Excel, Word, PowerPoint, and PDF files are parsed into readable text — requires the optional `[docs]` extras |
 | **Subdirectory allowlist** | Lock the server to only the directories the model actually needs |
 
 ---
@@ -178,7 +178,7 @@ Restart your MCP client after saving.
 | `MAX_FILE_SIZE_MB` | No | `10` | Maximum file size in MB that `read_file` will read |
 | `READ_PREVIEW_LINES` | No | `100` | Lines to return for oversized files. Set to `0` to hard-error instead |
 | `ALLOWED_PATHS` | No | — | Comma-separated subdirectory allowlist, e.g. `reports,finance/2024` |
-| `AUDIT_LOG_PATH` | No | stdout | File path for JSON audit logs. Falls back to stdout if unset |
+| `AUDIT_LOG_PATH` | No | stderr | File path for JSON audit logs. Falls back to stderr if unset |
 
 ---
 
@@ -188,7 +188,7 @@ Restart your MCP client after saving.
 - **Path traversal** is blocked — `..` segments are rejected before any SMB call.
 - **Sensitive file denylist** covers `.env`, `*.key`, `*.pem`, `*.bak`, `id_rsa`, `*.pfx`, `*.p12`, `*.token`, `.netrc`, `.htpasswd`, keystore files, and more. For production, combine this with `ALLOWED_PATHS` to restrict access to only the directories the model needs.
 - **File size limit** prevents reading files that would overflow the context window.
-- **Audit logging** records every tool call in JSON — never file contents.
+- **Audit logging** records every tool call in JSON (operation, path, outcome, tool-specific metadata) — never file contents.
 - **Error messages are sanitised** — internal hostnames, UNC paths, and credentials are never exposed to the client.
 
 ---
