@@ -22,8 +22,21 @@ jobs:
       - name: Install dependencies
         run: pip install ruff pytest ".[dev]"
 
+      - name: Audit dependencies
+        run: pip-audit
+
       - name: Lint
         run: ruff check .
 
       - name: Test
-        run: pytest
+        run: pytest --cov --cov-report=term-missing
+
+  docker-build:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t file-server-mcp .
