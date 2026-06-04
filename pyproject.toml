@@ -16,13 +16,13 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-
-[project.urls]
-Repository = "https://github.com/nithiin7/remote-file-server-mcp"
 dependencies = [
     "mcp>=1.0.0",
     "smbprotocol>=1.15.0",
 ]
+
+[project.urls]
+Repository = "https://github.com/nithiin7/remote-file-server-mcp"
 
 [project.scripts]
 file-server-mcp = "server:main"
