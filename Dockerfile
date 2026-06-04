@@ -20,34 +20,33 @@
 #                    ALLOWED_PATHS, AUDIT_LOG_PATH, READ_PREVIEW_LINES
 # ---------------------------------------------------------------------------
 
-    FROM python:3.12-slim AS base
+FROM python:3.12-slim AS base
 
-    # Create a non-root user — never run the server as root
-    RUN useradd --create-home --shell /bin/bash mcpuser
-    
-    WORKDIR /app
-    
-    # Copy the full package source (pyproject.toml must be present for pip install)
-    COPY pyproject.toml README.md ./
-    COPY server.py config.py ./
-    COPY smb/ smb/
-    COPY tools/ tools/
-    COPY utils/ utils/
-    
-    # Install the package and all dependencies
-    RUN pip install --no-cache-dir --upgrade pip \
-     && pip install --no-cache-dir .
-    
-    # Drop to non-root user for all subsequent operations
-    USER mcpuser
-    
-    # MCP servers communicate over stdio — no ports to expose
-    # Secrets must be injected via environment variables at runtime
-    ENV SMB_PORT=445 \
-        SMB_ENCRYPT=true \
-        SMB_TIMEOUT=30 \
-        MAX_FILE_SIZE_MB=10 \
-        READ_PREVIEW_LINES=100
-    
-    ENTRYPOINT ["file-server-mcp"]
-    
+# Create a non-root user — never run the server as root
+RUN useradd --create-home --shell /bin/bash mcpuser
+
+WORKDIR /app
+
+# Copy the full package source (pyproject.toml must be present for pip install)
+COPY pyproject.toml README.md ./
+COPY server.py config.py ./
+COPY smb/ smb/
+COPY tools/ tools/
+COPY utils/ utils/
+
+# Install the package and all dependencies
+RUN pip install --no-cache-dir --upgrade pip \
+ && pip install --no-cache-dir .
+
+# Drop to non-root user for all subsequent operations
+USER mcpuser
+
+# MCP servers communicate over stdio — no ports to expose
+# Secrets must be injected via environment variables at runtime
+ENV SMB_PORT=445 \
+    SMB_ENCRYPT=true \
+    SMB_TIMEOUT=30 \
+    MAX_FILE_SIZE_MB=10 \
+    READ_PREVIEW_LINES=100
+
+ENTRYPOINT ["file-server-mcp"]
