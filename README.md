@@ -32,9 +32,9 @@ All paths are relative to the share root (e.g. `reports/2024/q1.xlsx`).
 - **SMB packet signing** is required on all connections (protects against tampering in transit).
 - **Encryption** can be enabled via `SMB_ENCRYPT=true` for end-to-end SMB encryption.
 - **Path traversal** is blocked — `..` segments are rejected before any SMB call is made.
-- **Sensitive files** (`.env`, `*.key`, `*.pem`, `id_rsa`, `*.pfx`, `*.p12`, `*.token`, `.netrc`, `.htpasswd`, keystore files, etc.) are never listed or read.
+- **Sensitive files** (`.env`, `*.key`, `*.pem`, `*.bak`, `id_rsa`, `*.pfx`, `*.p12`, `*.token`, `.netrc`, `.htpasswd`, keystore files, etc.) are never listed or read. The denylist covers well-known patterns but is **not exhaustive** — `ALLOWED_PATHS` is the stronger control and should be used in production to restrict access to only the directories the model needs.
 - **File size limit** prevents reading files that would exceed the context window.
-- **Allowed paths** can restrict the server to specific subdirectories only.
+- **Allowed paths** can restrict the server to specific subdirectories only (recommended for production).
 - **Audit logging** records every tool call (operation, path, outcome, size) in JSON — never file contents.
 - Error messages are sanitised — internal hostnames, UNC paths, and credentials are never exposed to the client.
 
@@ -180,7 +180,8 @@ Add a separate entry for each server with a unique key:
 | `SMB_USERNAME`       | Yes      | —       | Username for SMB authentication                                       |
 | `SMB_PASSWORD`       | Yes      | —       | Password for SMB authentication                                       |
 | `SMB_PORT`           | No       | `445`   | SMB port                                                              |
-| `SMB_ENCRYPT`        | No       | `false` | Set to `true` to enable SMB encryption (requires server support)      |
+| `SMB_ENCRYPT`        | No       | `true`  | Set to `false` to disable SMB encryption (not recommended)            |
+| `SMB_TIMEOUT`        | No       | `30`    | Seconds before an SMB connect or operation times out                  |
 | `MAX_FILE_SIZE_MB`   | No       | `10`    | Maximum file size in MB that `read_file` will read                    |
 | `READ_PREVIEW_LINES` | No       | `100`   | Lines to return for oversized files. Set to `0` to hard-error instead |
 | `ALLOWED_PATHS`      | No       | —       | Comma-separated subdirectory allowlist, e.g. `reports,finance/2024`   |

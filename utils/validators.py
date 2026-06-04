@@ -33,6 +33,7 @@ DENIED_FILENAME_PATTERNS: list[str] = [
     "*.kdbx",          # KeePass database
     "*.keystore",
     "*.jks",           # Java keystore
+    "*.bak",           # backups of any of the above (e.g. id_rsa_backup, production.pem.bak)
 ]
 
 # Optional allowlist: restrict access to specific subdirectories.
