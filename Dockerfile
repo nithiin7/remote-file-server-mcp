@@ -20,7 +20,10 @@
 #                    ALLOWED_PATHS, AUDIT_LOG_PATH, READ_PREVIEW_LINES
 # ---------------------------------------------------------------------------
 
-FROM python:3.12-slim AS base
+# Pin to a specific digest for reproducible builds.
+# To update: docker pull python:3.12-slim && docker inspect python:3.12-slim --format='{{index .RepoDigests 0}}'
+# Or manage automatically with Dependabot (see .github/dependabot.yml).
+FROM python:3.12-slim@sha256:866411c135b507754efdf2fda51484be4d3d7d5173ed53cd083106132e710904 AS base
 
 # Create a non-root user — never run the server as root
 RUN useradd --create-home --shell /bin/bash mcpuser
@@ -48,5 +51,10 @@ ENV SMB_PORT=445 \
     SMB_TIMEOUT=30 \
     MAX_FILE_SIZE_MB=10 \
     READ_PREVIEW_LINES=100
+
+# No HEALTHCHECK: this server speaks MCP over stdio, not HTTP.
+# There is no listening socket for Docker or orchestrators to probe.
+# Liveness is determined by the MCP client maintaining the stdio connection.
+HEALTHCHECK NONE
 
 ENTRYPOINT ["file-server-mcp"]
