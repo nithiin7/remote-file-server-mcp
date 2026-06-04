@@ -28,8 +28,9 @@ def register(mcp) -> None:
                        Use 1 to search only the immediate directory.
 
         Returns:
-            JSON array of objects with keys: path (relative to share root), name, size_bytes.
-            Capped at 200 results. Denied files are excluded silently.
+            JSON object with key "results": array of objects with keys: path (relative to share root),
+            name, size_bytes. Includes "truncated": true and a "note" when capped at 200 results.
+            Denied files are excluded silently.
         """
         max_depth = min(max(1, max_depth), 10)  # clamp: 1–10
 
@@ -63,12 +64,13 @@ def register(mcp) -> None:
                           pattern=pattern, result_count=len(results), capped=True)
                     return json.dumps({
                         "results": results,
+                        "truncated": True,
                         "note": f"Result limit of {SEARCH_MAX_RESULTS} reached. Narrow your search.",
                     }, indent=2)
 
             audit("search_files", relative, "success",
                   pattern=pattern, result_count=len(results), capped=False)
-            return json.dumps(results, indent=2)
+            return json.dumps({"results": results}, indent=2)
 
         except ValueError as exc:
             audit("search_files", relative, "denied", reason=str(exc), pattern=pattern)

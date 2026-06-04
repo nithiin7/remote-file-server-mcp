@@ -2,7 +2,7 @@ import json
 
 import smbclient
 
-from smb.helpers import smb_path
+from smb.helpers import SEARCH_MAX_RESULTS, smb_path
 from smb.session import is_connection_error, with_reconnect
 from utils.logger import audit
 from utils.validators import check_filename_denylist, safe_relative_path, sanitised_error
@@ -33,7 +33,6 @@ def register(mcp) -> None:
 
         smb_dir = smb_path(relative)
         try:
-            LIMIT = 200
             entries: list[dict[str, object]] = []
             for entry in sorted(
                 smbclient.scandir(smb_dir),
@@ -52,14 +51,14 @@ def register(mcp) -> None:
                         "size": None if entry.is_dir() else entry.stat().st_size,
                     }
                 )
-                if len(entries) == LIMIT:
+                if len(entries) == SEARCH_MAX_RESULTS:
                     break
 
             result: dict[str, object] = {"entries": entries}
-            if len(entries) == LIMIT:
+            if len(entries) == SEARCH_MAX_RESULTS:
                 result["truncated"] = True
-                result["note"] = f"Results limited to {LIMIT} entries. Refine the path to see more."
-            audit("list_files", relative, "success", entry_count=len(entries), truncated=len(entries) == LIMIT)
+                result["note"] = f"Results limited to {SEARCH_MAX_RESULTS} entries. Refine the path to see more."
+            audit("list_files", relative, "success", entry_count=len(entries), truncated=len(entries) == SEARCH_MAX_RESULTS)
             return json.dumps(result, indent=2)
         except ValueError as exc:
             audit("list_files", relative, "denied", reason=str(exc))

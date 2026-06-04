@@ -1,5 +1,6 @@
 import functools
 import sys
+import time
 
 import smbclient
 
@@ -45,6 +46,7 @@ def with_reconnect(fn):
         except Exception as exc:
             if not is_connection_error(exc):
                 raise
+            time.sleep(1)
             reconnect()
             return fn(*args, **kwargs)
     return wrapper
